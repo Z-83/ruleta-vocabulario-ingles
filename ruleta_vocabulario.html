@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ruleta de Vocabulario en Inglés — Ana Zuñiga / Uniputumayo</title>
+  <style>
+    /* ─── Variables y Reset ─────────────────────────── */
+    :root {
+      --bg:       #0f172a;
+      --surface:  #1e293b;
+      --surface2: #334155;
+      --accent:   #6366f1;
+      --accent2:  #8b5cf6;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --gold:     #f59e0b;
+      --text:     #f1f5f9;
+      --muted:    #94a3b8;
+      --radius:   16px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    /* ─── Header ────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    header h1 {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      background: linear-gradient(135deg, var(--accent), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    header p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+    /* ─── Layout ─────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr min(420px, 100%) 1fr;
+      gap: 24px;
+      width: 100%;
+      max-width: 1100px;
+      align-items: start;
+    }
+    .panel-left, .panel-right {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .center { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+    /* ─── Card ───────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ─── Score Board ────────────────────────────────── */
+    .score-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .score-item {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .score-item .num {
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .score-item .lbl { font-size: 0.65rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+    .score-item.total .num  { color: var(--accent); }
+    .score-item.correct .num { color: var(--green); }
+    .score-item.wrong .num   { color: var(--red); }
+
+    /* ─── Word Display ───────────────────────────────── */
+    .word-display {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .word-display .current-word {
+      font-size: clamp(2rem, 6vw, 3rem);
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .word-display .hint { font-size: 0.8rem; opacity: 0.8; }
+
+    /* ─── Feedback ───────────────────────────────────── */
+    .feedback {
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1rem;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      background: var(--surface2);
+      color: var(--muted);
+    }
+    .feedback.correct { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid var(--green); }
+    .feedback.wrong   { background: rgba(239,68,68,0.15);  color: var(--red);   border: 1px solid var(--red); }
+    .feedback.listening { background: rgba(99,102,241,0.15); color: var(--accent); border: 1px solid var(--accent); animation: pulse 1.2s infinite; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+    /* ─── Buttons ────────────────────────────────────── */
+    .btn {
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 14px 24px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-spin {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      font-size: 1rem;
+    }
+    .btn-spin:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.4); }
+    .btn-mic {
+      background: linear-gradient(135deg, var(--green), #16a34a);
+      color: white;
+    }
+    .btn-mic:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(34,197,94,0.4); }
+    .btn-mic.listening { background: linear-gradient(135deg, var(--red), #b91c1c); animation: pulse 1s infinite; }
+    .btn-speak {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--surface2);
+    }
+    .btn-speak:hover:not(:disabled) { background: var(--surface); border-color: var(--accent); }
+    .btn-reset {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--surface2);
+      font-size: 0.8rem;
+      padding: 10px 16px;
+    }
+    .btn-reset:hover { color: var(--text); border-color: var(--red); }
+
+    /* ─── Canvas / Wheel ─────────────────────────────── */
+    .wheel-wrapper {
+      position: relative;
+      width: min(380px, 90vw);
+      height: min(380px, 90vw);
+    }
+    #wheelCanvas {
+      display: block;
+      filter: drop-shadow(0 0 24px rgba(99,102,241,0.5));
+      border-radius: 50%;
+    }
+    .pointer {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 32px solid var(--gold);
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      z-index: 10;
+    }
+
+    /* ─── History ────────────────────────────────────── */
+    .history-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .history-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-radius: 8px;
+    }
+    .history-list li .badge {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .badge.ok  { background: var(--green); }
+    .badge.err { background: var(--red); }
+    .history-list li .heard { color: var(--muted); font-size: 0.75rem; margin-left: auto; }
+
+    /* ─── Instructions ───────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 10px; }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ─── Responsive ─────────────────────────────────── */
+    @media (max-width: 800px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .panel-left  { order: 2; }
+      .center      { order: 1; }
+      .panel-right { order: 3; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🎡 Ruleta de Vocabulario en Inglés</h1>
+  <p>Ana Zuñiga · Uniputumayo · Desarrollo de Bases de Datos</p>
+</header>
+
+<div class="layout">
+  <!-- ── Panel Izquierdo ── -->
+  <div class="panel-left">
+    <!-- Puntuación -->
+    <div class="card">
+      <div class="card-title">📊 Puntuación</div>
+      <div class="score-grid">
+        <div class="score-item total">
+          <div class="num" id="scoreTotal">0</div>
+          <div class="lbl">Puntos</div>
+        </div>
+        <div class="score-item correct">
+          <div class="num" id="scoreCorrect">0</div>
+          <div class="lbl">Aciertos</div>
+        </div>
+        <div class="score-item wrong">
+          <div class="num" id="scoreWrong">0</div>
+          <div class="lbl">Errores</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instrucciones -->
+    <div class="card">
+      <div class="card-title">📋 Cómo jugar</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <span>Presiona <strong>Girar Ruleta</strong> para seleccionar una palabra aleatoria.</span>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <span>El sistema <strong>pronuncia</strong> la palabra automáticamente en inglés.</span>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <span>Presiona <strong>Escuchar Pronunciación</strong> y di la palabra en voz alta.</span>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <span>El sistema evalúa si tu pronunciación fue <strong>correcta</strong>. ¡Suma puntos!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reset -->
+    <button class="btn btn-reset" onclick="resetGame()">🔄 Reiniciar juego</button>
+  </div>
+
+  <!-- ── Centro ── -->
+  <div class="center">
+    <!-- Ruleta -->
+    <div class="wheel-wrapper">
+      <div class="pointer"></div>
+      <canvas id="wheelCanvas"></canvas>
+    </div>
+
+    <!-- Botón girar -->
+    <button class="btn btn-spin" id="btnSpin" onclick="spinWheel()">
+      🎡 Girar Ruleta
+    </button>
+
+    <!-- Palabra actual -->
+    <div class="word-display" id="wordDisplay">
+      <div class="current-word" id="currentWordEl">—</div>
+      <div class="hint" id="wordHint">Gira la ruleta para comenzar</div>
+    </div>
+
+    <!-- Botones de audio/mic -->
+    <button class="btn btn-speak" id="btnSpeak" onclick="speakWord()" disabled>
+      🔊 Repetir Pronunciación
+    </button>
+    <button class="btn btn-mic" id="btnMic" onclick="startListening()" disabled>
+      🎤 Escuchar mi Pronunciación
+    </button>
+
+    <!-- Feedback -->
+    <div class="feedback" id="feedback">Gira la ruleta para empezar</div>
+  </div>
+
+  <!-- ── Panel Derecho ── -->
+  <div class="panel-right">
+    <!-- Selector de voz -->
+    <div class="card">
+      <div class="card-title">🔊 Voz en inglés</div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:10px;">Elige una voz <strong style="color:var(--text)">en-US</strong> o <strong style="color:var(--text)">en-GB</strong>:</p>
+      <select id="voiceSelect" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--surface2);border-radius:8px;padding:10px 12px;font-size:0.82rem;cursor:pointer;outline:none;"><option value="">⏳ Cargando voces...</option></select>
+      <button class="btn btn-speak" style="margin-top:10px;font-size:0.8rem;padding:10px;" onclick="testVoice()">🎧 Probar voz</button>
+    </div>
+
+    <!-- Historial -->
+    <div class="card">
+      <div class="card-title">📜 Historial</div>
+      <ul class="history-list" id="historyList">
+        <li style="color:var(--muted);font-size:0.8rem;justify-content:center;">
+          Sin intentos aún
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── Datos ──────────────────────────────────────────────────
+  const WORDS = [
+    { word: 'apple',    emoji: '🍎', tip: 'Fruta roja' },
+    { word: 'dog',      emoji: '🐕', tip: 'Animal doméstico' },
+    { word: 'cat',      emoji: '🐱', tip: 'Animal doméstico' },
+    { word: 'house',    emoji: '🏠', tip: 'Vivienda' },
+    { word: 'school',   emoji: '🏫', tip: 'Lugar de estudio' },
+    { word: 'water',    emoji: '💧', tip: 'Líquido vital' },
+    { word: 'book',     emoji: '📚', tip: 'Para leer' },
+    { word: 'teacher',  emoji: '👩‍🏫', tip: 'Educador' },
+    { word: 'computer', emoji: '💻', tip: 'Tecnología' },
+    { word: 'music',    emoji: '🎵', tip: 'Arte sonoro' },
+    { word: 'flower',   emoji: '🌸', tip: 'Parte de la planta' },
+    { word: 'sun',      emoji: '☀️', tip: 'Estrella' },
+    { word: 'moon',     emoji: '🌙', tip: 'Satélite natural' },
+    { word: 'bird',     emoji: '🐦', tip: 'Animal con alas' },
+    { word: 'tree',     emoji: '🌳', tip: 'Planta grande' },
+    { word: 'star',     emoji: '⭐', tip: 'En el cielo' },
+    { word: 'phone',    emoji: '📱', tip: 'Comunicación' },
+    { word: 'bread',    emoji: '🍞', tip: 'Alimento' },
+    { word: 'river',    emoji: '🏞️', tip: 'Cuerpo de agua' },
+    { word: 'friend',   emoji: '🤝', tip: 'Compañero' },
+  ];
+
+  // ─── Paleta de colores para la ruleta ──────────────────────
+  const COLORS = [
+    '#6366f1','#8b5cf6','#ec4899','#f59e0b','#22c55e',
+    '#06b6d4','#3b82f6','#a855f7','#f97316','#14b8a6',
+    '#6366f1','#8b5cf6','#ec4899','#f59e0b','#22c55e',
+    '#06b6d4','#3b82f6','#a855f7','#f97316','#14b8a6',
+  ];
+
+  // ─── Estado ─────────────────────────────────────────────────
+  let state = {
+    spinning: false,
+    currentWord: null,
+    score: 0,
+    correct: 0,
+    wrong: 0,
+    history: [],
+    rotation: 0,
+    listening: false,
+    recognition: null,
+  };
+
+  // ─── Canvas / Ruleta ─────────────────────────────────────────
+  const canvas  = document.getElementById('wheelCanvas');
+  const ctx     = canvas.getContext('2d');
+  const SIZE    = Math.min(380, window.innerWidth * 0.9);
+  canvas.width  = SIZE;
+  canvas.height = SIZE;
+  const R       = SIZE / 2;
+  const N       = WORDS.length;
+  const SLICE   = (2 * Math.PI) / N;
+
+  function drawWheel(rotation) {
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    ctx.save();
+    ctx.translate(R, R);
+    ctx.rotate(rotation);
+
+    for (let i = 0; i < N; i++) {
+      const startAngle = i * SLICE;
+      const endAngle   = startAngle + SLICE;
+
+      // Slice fill
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, R - 4, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = COLORS[i % COLORS.length];
+      ctx.fill();
+
+      // Slice border
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Texto
+      ctx.save();
+      ctx.rotate(startAngle + SLICE / 2);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.font = `bold ${Math.max(10, SIZE * 0.032)}px 'Segoe UI', sans-serif`;
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur  = 3;
+      ctx.fillText(WORDS[i].emoji + ' ' + WORDS[i].word, R - 12, 5);
+      ctx.restore();
+    }
+
+    // Centro
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.12, 0, 2 * Math.PI);
+    ctx.fillStyle = '#1e293b';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Icono centro
+    ctx.font = `${R * 0.1}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🎡', 0, 0);
+
+    ctx.restore();
+  }
+
+  drawWheel(0);
+
+  // ─── Animación de giro ───────────────────────────────────────
+  function spinWheel() {
+    if (state.spinning) return;
+    state.spinning = true;
+    document.getElementById('btnSpin').disabled = true;
+    document.getElementById('btnMic').disabled  = true;
+    document.getElementById('btnSpeak').disabled = true;
+    setFeedback('⏳ Girando...', '');
+
+    const targetIndex   = Math.floor(Math.random() * N);
+    const fullRotations = (5 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
+    // El puntero apunta hacia arriba (270° = -π/2), ajustamos para que la palabra quede centrada
+    const targetAngle   = fullRotations - (targetIndex * SLICE + SLICE / 2) + (Math.PI * 1.5);
+    const startAngle    = state.rotation;
+    const endAngle      = startAngle + targetAngle;
+    const duration      = 4000 + Math.random() * 1500;
+    const startTime     = performance.now();
+
+    function easeOut(t) { return 1 - Math.pow(1 - t, 4); }
+
+    function animate(now) {
+      const elapsed  = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const current  = startAngle + (endAngle - startAngle) * easeOut(progress);
+      drawWheel(current);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        state.rotation = endAngle % (2 * Math.PI);
+        state.spinning  = false;
+        state.currentWord = WORDS[targetIndex];
+        document.getElementById('btnSpin').disabled = false;
+        onWordSelected(WORDS[targetIndex]);
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+
+  // ─── Palabra seleccionada ───────────────────────────────────
+  function onWordSelected(item) {
+    document.getElementById('currentWordEl').textContent = item.emoji + ' ' + item.word.toUpperCase();
+    document.getElementById('wordHint').textContent = item.tip;
+    document.getElementById('btnSpeak').disabled = false;
+    document.getElementById('btnMic').disabled   = false;
+    setFeedback('🔊 Escucha la pronunciación...', '');
+    setTimeout(() => speakWord(), 400);
+  }
+
+  // ─── Síntesis de voz ────────────────────────────────────────
+  // Pre-cargar voces disponibles
+  let cachedVoices = [];
+  function loadVoices() {
+    cachedVoices = speechSynthesis.getVoices();
+  }
+  speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+
+  function getBestEnglishVoice() {
+    const voices = speechSynthesis.getVoices();
+    // Prioridad: voces en-US nativas del sistema
+    const priority = [
+      v => v.lang === 'en-US' && v.localService,   // voz local en-US
+      v => v.lang.startsWith('en-US'),              // cualquier en-US
+      v => v.lang.startsWith('en-GB'),              // inglés británico
+      v => v.lang.startsWith('en'),                 // cualquier inglés
+    ];
+    for (const fn of priority) {
+      const found = voices.find(fn);
+      if (found) return found;
+    }
+    return null; // fallback al default del sistema
+  }
+
+  function speakWord() {
+    if (!state.currentWord) return;
+    speechSynthesis.cancel();
+    const doSpeak = () => {
+      const utter  = new SpeechSynthesisUtterance(state.currentWord.word);
+      utter.lang   = 'en-US';
+      utter.rate   = 0.80;
+      utter.pitch  = 1.0;
+      utter.volume = 1.0;
+      const selEl = document.getElementById('voiceSelect');
+      const engVoices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+      const selectedVoice = selEl && engVoices[parseInt(selEl.value)];
+      const voice = selectedVoice || getBestEnglishVoice();
+      if (voice) utter.voice = voice;
+      speechSynthesis.speak(utter);
+    };
+    if (speechSynthesis.getVoices().length === 0) {
+      speechSynthesis.onvoiceschanged = () => { loadVoices(); populateVoiceSelect(); doSpeak(); };
+    } else {
+      doSpeak();
+    }
+  }
+
+  // ─── Reconocimiento de voz ──────────────────────────────────
+  function startListening() {
+    if (!state.currentWord) return;
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      setFeedback('❌ Tu navegador no soporta reconocimiento de voz. Usa Chrome.', 'wrong');
+      return;
+    }
+
+    const rec       = new SpeechRec();
+    state.recognition = rec;
+    rec.lang        = 'en-US';
+    rec.continuous  = false;
+    rec.interimResults = false;
+    rec.maxAlternatives = 5;
+
+    const btn = document.getElementById('btnMic');
+    btn.classList.add('listening');
+    btn.textContent = '🔴 Escuchando...';
+    state.listening = true;
+    setFeedback('🎤 Di la palabra en inglés...', 'listening');
+
+    rec.onresult = (e) => {
+      const results = [];
+      for (let i = 0; i < e.results[0].length; i++) {
+        results.push(e.results[0][i].transcript.trim().toLowerCase());
+      }
+      const expected = state.currentWord.word.toLowerCase();
+      const correct  = results.some(r => r === expected || r.includes(expected));
+      evaluateResult(correct, results[0]);
+    };
+
+    rec.onerror = (e) => {
+      stopListening();
+      if (e.error === 'not-allowed') {
+        setFeedback('🚫 Permiso de micrófono denegado. Habilítalo en el navegador.', 'wrong');
+      } else if (e.error === 'no-speech') {
+        setFeedback('🤫 No se detectó voz. Intenta de nuevo.', '');
+      } else {
+        setFeedback('⚠️ Error: ' + e.error, 'wrong');
+      }
+    };
+
+    rec.onend = () => stopListening();
+    rec.start();
+  }
+
+  function stopListening() {
+    state.listening = false;
+    const btn = document.getElementById('btnMic');
+    btn.classList.remove('listening');
+    btn.textContent = '🎤 Escuchar mi Pronunciación';
+  }
+
+  function evaluateResult(correct, heard) {
+    const item = state.currentWord;
+    if (correct) {
+      state.score   += 10;
+      state.correct += 1;
+      setFeedback(`✅ ¡Excelente! Dijiste "${heard}" — ¡Correcto! +10 puntos`, 'correct');
+      triggerConfetti();
+    } else {
+      state.wrong += 1;
+      setFeedback(`❌ Escuché "${heard}" — La palabra era "${item.word}"`, 'wrong');
+    }
+
+    // Historial
+    state.history.unshift({ word: item.word, emoji: item.emoji, correct, heard });
+    if (state.history.length > 20) state.history.pop();
+
+    updateUI();
+  }
+
+  // ─── UI ─────────────────────────────────────────────────────
+  function setFeedback(msg, type) {
+    const el = document.getElementById('feedback');
+    el.textContent = msg;
+    el.className   = 'feedback' + (type ? ' ' + type : '');
+  }
+
+  function updateUI() {
+    document.getElementById('scoreTotal').textContent   = state.score;
+    document.getElementById('scoreCorrect').textContent = state.correct;
+    document.getElementById('scoreWrong').textContent   = state.wrong;
+
+    const list = document.getElementById('historyList');
+    if (state.history.length === 0) {
+      list.innerHTML = '<li style="color:var(--muted);font-size:0.8rem;justify-content:center;">Sin intentos aún</li>';
+      return;
+    }
+    list.innerHTML = state.history.map(h => `
+      <li>
+        <div class="badge ${h.correct ? 'ok' : 'err'}">${h.correct ? '✓' : '✗'}</div>
+        <span>${h.emoji} <strong>${h.word}</strong></span>
+        <span class="heard">"${h.heard}"</span>
+      </li>
+    `).join('');
+  }
+
+  function resetGame() {
+    state.score = 0; state.correct = 0; state.wrong = 0;
+    state.history = []; state.currentWord = null;
+    document.getElementById('currentWordEl').textContent = '—';
+    document.getElementById('wordHint').textContent = 'Gira la ruleta para comenzar';
+    document.getElementById('btnMic').disabled   = true;
+    document.getElementById('btnSpeak').disabled = true;
+    setFeedback('Gira la ruleta para empezar', '');
+    updateUI();
+    drawWheel(state.rotation);
+  }
+
+
+  // ─── Selector de voz ─────────────────────────────────────────
+  function populateVoiceSelect() {
+    const voices = speechSynthesis.getVoices();
+    const sel = document.getElementById("voiceSelect");
+    if (!sel) return;
+    const englishVoices = voices.filter(v => v.lang.startsWith("en"));
+    if (englishVoices.length === 0) {
+      sel.innerHTML = "<option>No se encontraron voces en inglés</option>";
+      return;
+    }
+    sel.innerHTML = englishVoices.map((v, i) =>
+      `<option value="${i}">${v.name} (${v.lang})${v.localService ? " ⭐" : ""}</option>`
+    ).join("");
+    // Seleccionar automáticamente la mejor voz en-US local
+    const bestIdx = englishVoices.findIndex(v => v.lang === "en-US" && v.localService);
+    if (bestIdx >= 0) sel.value = bestIdx;
+  }
+
+  function getSelectedVoice() {
+    const sel = document.getElementById("voiceSelect");
+    const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith("en"));
+    return voices[parseInt(sel.value)] || null;
+  }
+
+  function testVoice() {
+    const voice = getSelectedVoice();
+    const utter = new SpeechSynthesisUtterance("Hello, my name is computer");
+    utter.lang = "en-US";
+    utter.rate = 0.85;
+    if (voice) utter.voice = voice;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utter);
+  }
+
+  // Poblar selector cuando las voces carguen
+  speechSynthesis.onvoiceschanged = () => { loadVoices(); populateVoiceSelect(); };
+  setTimeout(populateVoiceSelect, 500);
+  // ─── Confeti ─────────────────────────────────────────────────
+  function triggerConfetti() {
+    const colors = ['#6366f1','#22c55e','#f59e0b','#ec4899','#06b6d4'];
+    for (let i = 0; i < 40; i++) {
+      const div = document.createElement('div');
+      div.style.cssText = `
+        position:fixed;
+        left:${Math.random()*100}vw;
+        top:-10px;
+        width:${6+Math.random()*6}px;
+        height:${6+Math.random()*6}px;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        border-radius:${Math.random()>0.5?'50%':'2px'};
+        pointer-events:none;
+        z-index:9999;
+        animation: fall ${1.5+Math.random()*1.5}s linear forwards;
+      `;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 3000);
+    }
+  }
+
+  // Inyectar keyframe para confeti
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(${360}deg); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+</script>
+</body>
+</html>
